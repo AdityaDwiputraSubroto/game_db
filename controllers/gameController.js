@@ -18,8 +18,9 @@ const createGame = async (req, res, next) => {
 
     // Create game record
     const gameId = await gameModel.createGame(idUser, title, description, imageUrl, genre);
-    res.json({ gameId });
+    res.status(201).json({ status: 'success', data: { gameId } });
   } catch (error) {
+    error.statusCode = error.statusCode || 500; // Default to 500 Internal Server Error if no status code is set
     next(error);
   }
 };
@@ -27,8 +28,9 @@ const createGame = async (req, res, next) => {
 const getAllGames = async (req, res, next) => {
   try {
     const games = await gameModel.getAllGames();
-    res.json(games);
+    res.status(200).json({ status: 'success', data: games });
   } catch (error) {
+    error.statusCode = error.statusCode || 500;
     next(error);
   }
 };
@@ -42,8 +44,9 @@ const getGameById = async (req, res, next) => {
       err.statusCode = 404;
       throw err;
     }
-    res.json(game);
+    res.status(200).json({ status: 'success', data: game });
   } catch (error) {
+    error.statusCode = error.statusCode || 500;
     next(error);
   }
 };
@@ -62,8 +65,9 @@ const updateGame = async (req, res, next) => {
     }
 
     await gameModel.updateGame(id, title, description, imageUrl, genre);
-    res.json({ message: 'Game updated successfully' });
+    res.status(200).json({ status: 'success', message: 'Game updated successfully' });
   } catch (error) {
+    error.statusCode = error.statusCode || 500;
     next(error);
   }
 };
@@ -72,8 +76,9 @@ const deleteGame = async (req, res, next) => {
   const { id } = req.params;
   try {
     await gameModel.deleteGame(id);
-    res.json({ message: 'Game deleted successfully' });
+    res.status(200).json({ status: 'success', message: 'Game deleted successfully' });
   } catch (error) {
+    error.statusCode = error.statusCode || 500;
     next(error);
   }
 };
