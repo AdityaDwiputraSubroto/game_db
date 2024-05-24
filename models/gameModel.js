@@ -1,11 +1,10 @@
-const cloudinary = require('../config/cloudinaryConfig');
 const db = require('../config/db');
 
-const createGame = async (idUser, title, description, imageUrl, genre) => {
+const createGame = async (idUser, title, description, imageUrl, publicId, genre) => {
   try {
     const [result] = await db.execute(
-      'INSERT INTO games (idUser, title, description, imageUrl, genre) VALUES (?, ?, ?, ?, ?)', 
-      [idUser, title, description, imageUrl, genre]
+      'INSERT INTO games (idUser, title, description, imageUrl, publicId, genre) VALUES (?, ?, ?, ?, ?, ?)', 
+      [idUser, title, description, imageUrl, publicId, genre]
     );
     return result.insertId;
   } catch (error) {
@@ -37,24 +36,39 @@ const getGameById = async (id) => {
   }
 };
 
-const updateGame = async (id, title, description, imageUrl, genre) => {
+const updateGame = async (id, title, description, imageUrl, genre, publicId) => {
   try {
-    await db.execute(
-      'UPDATE games SET title = ?, description = ?, imageUrl = ?, genre = ? WHERE id = ?', 
-      [title, description, imageUrl, genre, id]
+    const [result] = await db.execute(
+      'UPDATE games SET title = ?, description = ?, imageUrl = ?, genre = ?, publicId = ? WHERE id = ?', 
+      [title, description, imageUrl, genre, publicId, id]
     );
+    
+    return result;
   } catch (error) {
-    const err = new Error('Error updating game: ' + error.message);
+    const err = new Error('Error update game: ' + error.message);
     err.statusCode = 500;
     throw err;
   }
 };
 
+const getGamePublicIdById = async (id) => {
+  try {
+    const [rows] = await db.execute('SELECT publicId FROM games WHERE id = ?', [id]);
+    return rows[0]?.publicId;
+  } catch (error) {
+    const err = new Error('Error fetching game public ID: ' + error.message);
+    err.statusCode = 500;
+    throw err;
+  }
+};
+
+
 const deleteGame = async (id) => {
   try {
-    await db.execute('DELETE FROM games WHERE id = ?', [id]);
+    const [result] = await db.execute('DELETE FROM games WHERE id = ?', [id]);
+    return result;
   } catch (error) {
-    const err = new Error('Error deleting game: ' + error.message);
+    const err = new Error('Error delete game: ' + error.message);
     err.statusCode = 500;
     throw err;
   }
@@ -78,4 +92,5 @@ module.exports = {
   updateGame,
   deleteGame,
   getGamesByUserId,
+  getGamePublicIdById
 };

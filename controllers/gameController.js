@@ -5,22 +5,27 @@ const createGame = async (req, res, next) => {
   const { idUser, title, description, genre } = req.body;
   const image = req.file;
 
-  if (!idUser || !title || !description || !genre || !image) {
+  if (!idUser || !title || !description || !genre) {
     const err = new Error('All fields are required');
     err.statusCode = 400;
     return next(err);
   }
 
   try {
-    // Upload image to Cloudinary
-    const uploadResult = await cloudinary.uploader.upload(image.path);
-    const imageUrl = uploadResult.secure_url;
-
-    // Create game record
-    const gameId = await gameModel.createGame(idUser, title, description, imageUrl, genre);
+    let imageUrl = null;
+    let publicId = null;
+   
+    if(image){
+      imageUrl = image.path;
+      publicId = image.filename;
+    }
+    
+    console.log('cloudinary upload result : '+publicId);
+    // Insert game 
+    const gameId = await gameModel.createGame(idUser, title, description, imageUrl, publicId, genre);
     res.status(201).json({ status: 'success', data: { gameId } });
   } catch (error) {
-    error.statusCode = error.statusCode || 500; // Default to 500 Internal Server Error if no status code is set
+    error.statusCode = error.statusCode || 500; 
     next(error);
   }
 };
@@ -58,13 +63,26 @@ const updateGame = async (req, res, next) => {
 
   try {
     let imageUrl = null;
+    let publicId = null;
+    
     if (image) {
+      //delete image if update image
+      const oldPublicId = await gameModel.getGamePublicIdById(id);
+      if (oldPublicId) {
+          // Delete the image from Cloudinary using the publicId
+          await cloudinary.uploader.destroy(oldPublicId);
+      }
       // Upload image to Cloudinary
-      const uploadResult = await cloudinary.uploader.upload(image.path);
-      imageUrl = uploadResult.secure_url;
+      imageUrl = image.path;
+      publicId = image.filename;
     }
 
-    await gameModel.updateGame(id, title, description, imageUrl, genre);
+    result = await gameModel.updateGame(id, title, description, imageUrl, genre, publicId);
+    if (result.affectedRows === 0) {
+      const err = new Error('Error update game: Game not found');
+      err.statusCode = 404;
+      throw err;
+    }
     res.status(200).json({ status: 'success', message: 'Game updated successfully' });
   } catch (error) {
     error.statusCode = error.statusCode || 500;
@@ -75,7 +93,18 @@ const updateGame = async (req, res, next) => {
 const deleteGame = async (req, res, next) => {
   const { id } = req.params;
   try {
-    await gameModel.deleteGame(id);
+    const publicId = await gameModel.getGamePublicIdById(id);
+    if (publicId) {
+      // Delete the image from Cloudinary using the publicId
+      await cloudinary.uploader.destroy(publicId);
+    }
+
+    result = await gameModel.deleteGame(id);
+    if (result.affectedRows === 0) {
+      const err = new Error('Error delete game: Game not found');
+      err.statusCode = 404;
+      throw err;
+    }
     res.status(200).json({ status: 'success', message: 'Game deleted successfully' });
   } catch (error) {
     error.statusCode = error.statusCode || 500;
