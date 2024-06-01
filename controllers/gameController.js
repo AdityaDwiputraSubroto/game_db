@@ -12,8 +12,8 @@ const createGame = async (req, res, next) => {
   }
 
   try {
-    let imageUrl = null;
-    let publicId = null;
+    let imageUrl = '';
+    let publicId = '';
    
     if(image){
       imageUrl = image.path;
@@ -62,8 +62,8 @@ const updateGame = async (req, res, next) => {
   const image = req.file;
 
   try {
-    let imageUrl = null;
-    let publicId = null;
+    let imageUrl = '';
+    let publicId = '';
     
     if (image) {
       //delete image if update image
